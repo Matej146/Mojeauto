@@ -1,0 +1,4 @@
+analysis SlipCruiseTransient
+  extends Dyad.TransientAnalysis(stop = 45)
+  model = Mojeauto.SlipCruiseIcePatch()
+end

@@ -1,0 +1,4 @@
+analysis GradeCarTransient
+  extends Dyad.TransientAnalysis(stop = 500)
+  model = Mojeauto.GradeCar()
+end

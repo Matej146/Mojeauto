@@ -2,9 +2,11 @@
 component GradeCar
   "Commanded engine torque"
   tau_cmd = Dyad.RealInput() {^tau_cmd}
+  "Road gradient, tan(alpha)"
+  grade = Dyad.RealInput() {^grade}
   "Vehicle speed in km/h"
   v_kmh = Dyad.RealOutput() {^v_kmh}
-  engine = Engine() {^engine}
+  engine = Engine(T_max = T_max, theta_e = theta_e) {^engine}
   driveline = Driveline() {^driveline}
   vsensor = TranslationalComponents.Sensors.VelocitySensor() {^vsensor}
   to_kmh = BlockComponents.Math.Gain(k = 3.6) {^to_kmh}
@@ -12,9 +14,13 @@ component GradeCar
   rot_ground = RotationalComponents.Components.Fixed() {^rot_ground}
   "Road under the wheel"
   trans_ground = TranslationalComponents.Components.Fixed() {^trans_ground}
-  body = GradeBody() {^body}
-  "Road gradient, tan(alpha)"
-  grade = Dyad.RealInput() {^grade}
+  body = GradeBody(m = m) {^body}
+  "Peak deliverable torque"
+  parameter T_max::Torque = 150
+  "Vehicle mass"
+  parameter m::Dyad.Mass = 1400
+  "Injection-to-torque transport delay"
+  structural parameter theta_e::Time = 0.3
 relations
   connect(tau_cmd, engine.tau_cmd) {^id11}
   connect(engine.spline, driveline.spline) {^id12}
@@ -33,6 +39,9 @@ metadata {
   "_links": {
     "tau_cmd": {
       "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}}}
+    },
+    "grade": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 30, "y1": 910, "y2": 990}}}
     },
     "v_kmh": {
       "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
@@ -57,9 +66,6 @@ metadata {
     },
     "body": {
       "Dyad": {"placement": {"diagram": {"x1": 560, "x2": 660, "y1": 450, "y2": 550}}}
-    },
-    "grade": {
-      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 30, "y1": 910, "y2": 990}}}
     },
     "id11": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
     "id12": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},

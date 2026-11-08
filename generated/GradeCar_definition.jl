@@ -5,17 +5,25 @@
 
 
 @doc Markdown.doc"""
-   GradeCar(; name, __overrides)
+   GradeCar(; name, theta_e, T_max, m, __overrides)
 
 Longitudinal car on a road with a gradient: torque command and grade in, speed in km/h out.
+
+## Parameters:
+
+| Name         | Description                         | Units  |   Default value |
+| ------------ | ----------------------------------- | ------ | --------------- |
+| `theta_e`         | Injection-to-torque transport delay                         | s  |   0.3 |
+| `T_max`         | Peak deliverable torque                         | N.m  |   150 |
+| `m`         | Vehicle mass                         | kg  |   1400 |
 
 ## Connectors
 
  * `tau_cmd` - This connector represents a real signal as an input to a component ([`RealInput`](@ref))
- * `v_kmh` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
  * `grade` - This connector represents a real signal as an input to a component ([`RealInput`](@ref))
+ * `v_kmh` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
 """
-@component function GradeCar(; name = nothing, __overrides = Dict{String, Any}())
+@component function GradeCar(; name = nothing, var"theta_e"=0.3, var"T_max"=Float64(150), var"m"=Float64(1400), __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -33,6 +41,11 @@ Longitudinal car on a road with a gradient: torque command and grade in, speed i
   __eqs = Equation[]
   __bindings = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
 
+  ### Keyword argument overrides
+  haskey(__overrides, "theta_e") && (theta_e = pop!(__overrides, "theta_e"))
+  haskey(__overrides, "T_max") && (T_max = pop!(__overrides, "T_max"))
+  haskey(__overrides, "m") && (m = pop!(__overrides, "m"))
+
   ### Structural Parameters (functions)
 
   ### Structural Parameters (Final)
@@ -46,13 +59,19 @@ Longitudinal car on a road with a gradient: torque command and grade in, speed i
   ### Deferred assignment (default values that depend on final parameters)
 
   ### Symbolic Parameters
+  __local__T_max = T_max
+  append!(__params, @parameters (T_max::Real), [description = "Peak deliverable torque"])
+  __dyad_seed_parameter!(__initial_conditions, __bindings, T_max, __local__T_max)
+  __local__m = m
+  append!(__params, @parameters (m::Real), [description = "Vehicle mass", bounds = (0, Inf)])
+  __dyad_seed_parameter!(__initial_conditions, __bindings, m, __local__m)
 
   ### Final Parameters (assignments)
 
   ### Final Path Parameters
   append!(__vars, @variables (tau_cmd(t)::Real), [input = true])
-  append!(__vars, @variables (v_kmh(t)::Real), [output = true])
   append!(__vars, @variables (grade(t)::Real), [input = true])
+  append!(__vars, @variables (v_kmh(t)::Real), [output = true])
 
   ### Variables (declarations)
 
@@ -64,7 +83,7 @@ Longitudinal car on a road with a gradient: torque command and grade in, speed i
   ### Components
   # Subcomponent engine of type Mojeauto.Engine
   engine_overrides = __pop_subcomponent_overrides!(__overrides, "engine")
-  push!(__systems, @named engine = Mojeauto.Engine(; __overrides = engine_overrides))
+  push!(__systems, @named engine = Mojeauto.Engine(; T_max=T_max, theta_e=theta_e, __overrides = engine_overrides))
   # Subcomponent driveline of type Mojeauto.Driveline
   driveline_overrides = __pop_subcomponent_overrides!(__overrides, "driveline")
   push!(__systems, @named driveline = Mojeauto.Driveline(; __overrides = driveline_overrides))
@@ -82,7 +101,7 @@ Longitudinal car on a road with a gradient: torque command and grade in, speed i
   push!(__systems, @named trans_ground = TranslationalComponents.Components.Fixed(; __overrides = trans_ground_overrides))
   # Subcomponent body of type Mojeauto.GradeBody
   body_overrides = __pop_subcomponent_overrides!(__overrides, "body")
-  push!(__systems, @named body = Mojeauto.GradeBody(; __overrides = body_overrides))
+  push!(__systems, @named body = Mojeauto.GradeBody(; m=m, __overrides = body_overrides))
 
   ### Check there are no unmatched overrides
   isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))

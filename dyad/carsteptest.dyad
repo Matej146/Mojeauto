@@ -1,0 +1,9 @@
+component CarStepTest
+  cmd = BlockComponents.Sources.Step(offset = 31.078, start_time = 50, height = 9.041)
+  plant = Mojeauto.Car()
+relations
+  initial plant.body.mass.s = 0
+  initial plant.body.mass.v = 25
+  initial plant.engine.lag.x = 31.078
+  connect(cmd.y, plant.tau_cmd)
+end

@@ -1,0 +1,4 @@
+analysis GradeCarFullThrottleTransient
+  extends Dyad.TransientAnalysis(stop = 500)
+  model = Mojeauto.GradeCarFullThrottle()
+end

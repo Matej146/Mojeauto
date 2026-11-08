@@ -1,0 +1,4 @@
+analysis CruiseClimbTransient
+  extends Dyad.TransientAnalysis(stop = 400)
+  model = Mojeauto.CruiseClimb()
+end

@@ -1,0 +1,18 @@
+component MappedCarWOT
+  "Car at full pedal"
+  pedal_cmd = BlockComponents.Sources.Constant(k = 1)
+  car = MappedCar()
+relations
+  connect(pedal_cmd.y, car.pedal)
+  initial car.body.mass.s = 0
+  initial car.body.mass.v = 0
+  initial car.flywheel.w = 900 * pi / 30
+  initial car.flywheel.phi = 0
+  initial car.driveline.clutch.spline_b.phi = 0
+  initial car.engine.air.manifold.p = 33600
+end
+
+analysis MappedCarWOTTransient
+  extends TransientAnalysis(stop = 120)
+  model = MappedCarWOT()
+end

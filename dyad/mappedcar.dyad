@@ -1,0 +1,41 @@
+component MappedCar
+  "Initial CVT ratio, engine to wheel"
+  parameter ratio_initial::Real = 12
+
+  pedal = RealInput()
+  v_kmh = RealOutput()
+  p_m = RealOutput()
+  fuel_lph = RealOutput()
+
+  engine = Mojeauto.MapEngine()
+  flywheel = RotationalComponents.Components.Inertia(J = 0.15)
+  to_lph = BlockComponents.Math.Gain(k = 4832.2)
+  driveline = VehicleSystemsComponents.Vehicle.CVTDriveline(
+    ratio_initial = ratio_initial
+  )
+  body = Body()
+  vsensor = TranslationalComponents.Sensors.VelocitySensor()
+  to_kmh = BlockComponents.Math.Gain(k = 3.6)
+  rot_ground = RotationalComponents.Components.Fixed()
+  trans_ground = TranslationalComponents.Components.Fixed()
+
+relations
+  connect(pedal, engine.pedal)
+  connect(pedal, driveline.pedal)
+
+  connect(engine.spline, flywheel.spline_a)
+  connect(flywheel.spline_b, driveline.spline)
+
+  connect(engine.support, rot_ground.spline)
+  connect(driveline.support_r, rot_ground.spline)
+  connect(driveline.flange, body.flange)
+  connect(driveline.support_t, trans_ground.flange)
+
+  connect(vsensor.flange, body.flange)
+  connect(vsensor.v, to_kmh.u)
+  connect(to_kmh.y, v_kmh)
+
+  connect(engine.p_m, p_m)
+  connect(engine.mdot_fuel, to_lph.u)
+  connect(to_lph.y, fuel_lph)
+end

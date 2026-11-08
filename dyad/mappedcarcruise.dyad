@@ -12,6 +12,7 @@ component MappedCarCruise
   parameter p_m0::Pressure = 54420
 
   pedal = BlockComponents.Sources.Constant(k = pedal_cmd)
+  brake_cmd = BlockComponents.Sources.Constant(k = 0)
 
   car = MappedCar(
     ratio_initial = rpm0 * pi / 30 * 0.31 / (speed_kmh / 3.6)
@@ -19,6 +20,7 @@ component MappedCarCruise
 
 relations
   connect(pedal.y, car.pedal)
+  connect(brake_cmd.y, car.F_brake)
 
   initial car.body.mass.s = 0
   initial car.body.mass.v = speed_kmh / 3.6

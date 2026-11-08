@@ -54,6 +54,9 @@
   # Subcomponent pedal_cmd of type BlockComponents.Sources.Constant
   pedal_cmd_overrides = __pop_subcomponent_overrides!(__overrides, "pedal_cmd")
   push!(__systems, @named pedal_cmd = BlockComponents.Sources.Constant(; k=Float64(1), __overrides = pedal_cmd_overrides))
+  # Subcomponent brake_cmd of type BlockComponents.Sources.Constant
+  brake_cmd_overrides = __pop_subcomponent_overrides!(__overrides, "brake_cmd")
+  push!(__systems, @named brake_cmd = BlockComponents.Sources.Constant(; k=Float64(0), __overrides = brake_cmd_overrides))
   # Subcomponent car of type Mojeauto.MappedCar
   car_overrides = __pop_subcomponent_overrides!(__overrides, "car")
   push!(__systems, @named car = Mojeauto.MappedCar(; __overrides = car_overrides))
@@ -76,6 +79,7 @@
 
   ### Equations
   push!(__eqs, connect(pedal_cmd.y, car.pedal))
+  push!(__eqs, connect(brake_cmd.y, car.F_brake))
 
   # Return completely constructed System
   return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)

@@ -16,6 +16,7 @@
 ## Connectors
 
  * `pedal` - This connector represents a real signal as an input to a component ([`RealInput`](@ref))
+ * `F_brake` - This connector represents a real signal as an input to a component ([`RealInput`](@ref))
  * `v_kmh` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
  * `p_m` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
  * `fuel_lph` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
@@ -62,6 +63,7 @@
 
   ### Final Path Parameters
   append!(__vars, @variables (pedal(t)::Real), [input = true])
+  append!(__vars, @variables (F_brake(t)::Real), [input = true])
   append!(__vars, @variables (v_kmh(t)::Real), [output = true])
   append!(__vars, @variables (p_m(t)::Real), [output = true])
   append!(__vars, @variables (fuel_lph(t)::Real), [output = true])
@@ -101,6 +103,9 @@
   # Subcomponent trans_ground of type TranslationalComponents.Components.Fixed
   trans_ground_overrides = __pop_subcomponent_overrides!(__overrides, "trans_ground")
   push!(__systems, @named trans_ground = TranslationalComponents.Components.Fixed(; __overrides = trans_ground_overrides))
+  # Subcomponent brake of type VehicleSystemsComponents.Vehicle.RoadBrake
+  brake_overrides = __pop_subcomponent_overrides!(__overrides, "brake")
+  push!(__systems, @named brake = VehicleSystemsComponents.Vehicle.RoadBrake(; __overrides = brake_overrides))
 
   ### Check there are no unmatched overrides
   isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
@@ -127,6 +132,9 @@
   push!(__eqs, connect(engine.p_m, p_m))
   push!(__eqs, connect(engine.mdot_fuel, to_lph.u))
   push!(__eqs, connect(to_lph.y, fuel_lph))
+  push!(__eqs, connect(F_brake, brake.F_cmd))
+  push!(__eqs, connect(brake.flange, body.flange))
+  push!(__eqs, connect(brake.support, trans_ground.flange))
 
   # Return completely constructed System
   return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)

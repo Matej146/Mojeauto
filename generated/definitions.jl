@@ -21,8 +21,24 @@ import BlockComponents
 let api = isdefined(BlockComponents, :__dyad_constructor_api) ? BlockComponents.__dyad_constructor_api : 1
   api == 2 || error("BlockComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate BlockComponents with the same Dyad compiler that generated Mojeauto.")
 end
+import DiscreteComponents
+let api = isdefined(DiscreteComponents, :__dyad_constructor_api) ? DiscreteComponents.__dyad_constructor_api : 1
+  api == 2 || error("DiscreteComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate DiscreteComponents with the same Dyad compiler that generated Mojeauto.")
+end
 import DyadData
 import DyadInterface
+import ElectricalComponents
+let api = isdefined(ElectricalComponents, :__dyad_constructor_api) ? ElectricalComponents.__dyad_constructor_api : 1
+  api == 2 || error("ElectricalComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate ElectricalComponents with the same Dyad compiler that generated Mojeauto.")
+end
+import HydraulicComponents
+let api = isdefined(HydraulicComponents, :__dyad_constructor_api) ? HydraulicComponents.__dyad_constructor_api : 1
+  api == 2 || error("HydraulicComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate HydraulicComponents with the same Dyad compiler that generated Mojeauto.")
+end
+import MultibodyComponents
+let api = isdefined(MultibodyComponents, :__dyad_constructor_api) ? MultibodyComponents.__dyad_constructor_api : 1
+  api == 2 || error("MultibodyComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate MultibodyComponents with the same Dyad compiler that generated Mojeauto.")
+end
 import RotationalComponents
 let api = isdefined(RotationalComponents, :__dyad_constructor_api) ? RotationalComponents.__dyad_constructor_api : 1
   api == 2 || error("RotationalComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate RotationalComponents with the same Dyad compiler that generated Mojeauto.")
@@ -34,6 +50,10 @@ end
 import TranslationalComponents
 let api = isdefined(TranslationalComponents, :__dyad_constructor_api) ? TranslationalComponents.__dyad_constructor_api : 1
   api == 2 || error("TranslationalComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate TranslationalComponents with the same Dyad compiler that generated Mojeauto.")
+end
+import VehicleSystemsComponents
+let api = isdefined(VehicleSystemsComponents, :__dyad_constructor_api) ? VehicleSystemsComponents.__dyad_constructor_api : 1
+  api == 2 || error("VehicleSystemsComponents was generated with Dyad constructor API version $api, but Mojeauto requires version 2 (the `__overrides` dict override channel). Regenerate VehicleSystemsComponents with the same Dyad compiler that generated Mojeauto.")
 end
 @doc Markdown.doc"""
 This connector represents an electrical pin with voltage and current as the potential and flow variables, respectively.
@@ -213,6 +233,8 @@ component.
 end
 
 
+include("AirPathStepTransient_definition.jl")
+include("AirPathStep_definition.jl")
 include("Body_definition.jl")
 include("CarFullThrottleTransient_definition.jl")
 include("CarFullThrottle_definition.jl")
@@ -235,6 +257,7 @@ include("GradeCarTransient_definition.jl")
 include("GradeCar_definition.jl")
 include("GradeForce_definition.jl")
 include("Hello_definition.jl")
+include("Manifold_definition.jl")
 include("MeasurementNoise_definition.jl")
 include("NoisyCruiseStep_definition.jl")
 include("NoisyCruiseTransient_definition.jl")

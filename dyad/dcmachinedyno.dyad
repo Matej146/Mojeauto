@@ -1,0 +1,34 @@
+component DCMachineDyno
+  "Supply voltage at the terminals"
+  parameter V::Voltage = 350.0
+  "Dyno speed before the ramp [rpm]"
+  parameter rpm_start::Real = 3283.0
+  "Dyno speed after the ramp [rpm]"
+  parameter rpm_end::Real = 3600.0
+
+  voltage = BlockComponents.Sources.Constant(k = V)
+  supply = ElectricalComponents.Analog.Sources.VoltageSource()
+  machine = DCMachine()
+  ground = ElectricalComponents.Analog.Basic.Ground()
+  speed = BlockComponents.Sources.Ramp(
+    height = (rpm_end - rpm_start) * pi / 30.0,
+    offset = rpm_start * pi / 30.0,
+    start_time = 1.0,
+    duration = 10.0
+  )
+  dyno = RotationalComponents.Sources.VelocitySource()
+  mounts = RotationalComponents.Components.Fixed()
+
+relations
+  initial dyno.phi = 0
+  initial machine.inductor.i = 0
+
+  connect(voltage.y, supply.V)
+  connect(supply.p, machine.p)
+  connect(machine.n, supply.n)
+  connect(supply.n, ground.g)
+  connect(speed.y, dyno.w_ref)
+  connect(machine.spline, dyno.spline)
+  connect(machine.support, mounts.spline)
+  connect(dyno.support, mounts.spline)
+end

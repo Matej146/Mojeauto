@@ -25,7 +25,7 @@ TranslationalComponents = "42acc370-819b-4877-bdd6-eb3294461f5d"
 VehicleSystemsComponents = "51e0f197-a681-4fed-b1ae-12a69f787746"
 
 [sources]
-VehicleSystemsComponents = {rev = "lecture-03-dyad-3.5", url = "https://github.com/dr14-make/16ESPD"}
+VehicleSystemsComponents = {rev = "lecture-04-dyad-3.5", url = "https://github.com/dr14-make/16ESPD"}
 
 [compat]
 BlockComponents = "=5.0.0"

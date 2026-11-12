@@ -1,0 +1,18 @@
+analysis DCMachineDynoTransient
+  extends TransientAnalysis(
+    stop = 12.0,
+    alg = ODEAlg.Rodas5P(),
+    saveat = 0.01,
+    tstops = [1.0, 11.0]
+  )
+
+  parameter V::Voltage = 350.0
+  parameter rpm_start::Real = 3283.0
+  parameter rpm_end::Real = 3600.0
+
+  model = DCMachineDyno(
+    V = V,
+    rpm_start = rpm_start,
+    rpm_end = rpm_end
+  )
+end

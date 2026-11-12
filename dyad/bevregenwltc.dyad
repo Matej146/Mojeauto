@@ -1,0 +1,137 @@
+component BEVRegenWLTC
+  parameter m::Mass = 1500.0
+  parameter radius::Length = 0.31
+  parameter k::Real = 50.0
+  parameter Ti::Time = 2.0
+  parameter tau_max::Torque = 320.0
+  parameter P_charge::Power = 80.5e3
+  parameter v_fade::Real = 10.0
+  parameter P_aux::Power = 300.0
+  parameter ratio::Real = 8.193
+  parameter dv_wheel::Velocity = 0.01
+
+  trace = VehicleSystemsComponents.Vehicle.DriveCycle() {^trace}
+  driver = BlockComponents.Continuous.LimPID(
+    with_D = false,
+    k = k,
+    Ti = Ti,
+    y_max = tau_max,
+    y_min = -tau_max
+  ) {^driver}
+  no_ff = BlockComponents.Sources.Constant(k = 0.0) {^no_ff}
+  kmh = VehicleSystemsComponents.Vehicle.ToKmPerHour() {^kmh}
+  drive = ElectricDrive(ratio = ratio, P_aux = P_aux) {^drive}
+  differential = MultibodyComponents.PlanarMechanics.DifferentialGear() {^differential}
+  mount = RotationalComponents.Components.Fixed() {^mount}
+  straight = RotationalComponents.Components.Fixed() {^straight}
+  flat = BlockComponents.Sources.Constant(k = 0.0) {^flat}
+  car = VehicleSystemsComponents.Vehicle.Planar.PlanarCar(
+    m = m,
+    radius = radius
+  ) {^car}
+  motion = VehicleSystemsComponents.Vehicle.Planar.BusMotion() {^motion}
+  roadload = VehicleSystemsComponents.Vehicle.Planar.PlanarRoadLoad(m = m) {^roadload}
+  blend = RegenBlend(
+    ratio = ratio,
+    radius = radius,
+    tau_max = tau_max,
+    P_charge = P_charge,
+    v_fade = v_fade
+  ) {^blend}
+
+  variable P_dc::Power
+  variable P_shaft::Power
+  variable E_dc_in::Energy
+  variable E_shaft_out::Energy
+  variable E_shaft_in::Energy
+  variable E_brake::Energy
+
+relations
+  connect(car.bus, motion.bus)
+  connect(trace.y, driver.u_s)
+  connect(motion.vx, kmh.u)
+  connect(kmh.y, driver.u_m, blend.v)
+  connect(no_ff.y, driver.u_ff)
+  connect(drive.spline, differential.flange_b)
+  connect(differential.flange_left, car.spin_fl)
+  connect(differential.flange_right, car.spin_fr)
+  connect(drive.support, mount.spline)
+  connect(car.steering, straight.spline)
+  connect(flat.y, roadload.grade)
+  connect(car.chassis, roadload.chassis)
+  connect(driver.y, blend.tau_ref)
+  connect(blend.tau_motor, drive.tau_ref)
+  connect(blend.tau_brake, car.tau_fl, car.tau_fr, car.tau_rl, car.tau_rr)
+
+  P_dc = drive.battery.v * drive.battery.i
+  P_shaft = drive.machine.P_mech
+  der(E_dc_in) = max(-P_dc, 0.0)
+  der(E_shaft_out) = max(P_shaft, 0.0)
+  der(E_shaft_in) = max(-P_shaft, 0.0)
+  der(E_brake) =
+    car.fl.brake.tau_friction * car.fl.brake.w +
+    car.fr.brake.tau_friction * car.fr.brake.w +
+    car.rl.brake.tau_friction * car.rl.brake.w +
+    car.rr.brake.tau_friction * car.rr.brake.w
+
+  initial car.body.r = [0, 0]
+  initial car.body.v = [0, 0]
+  initial car.body.phi = 0.0
+  initial car.body.w = 0.0
+  initial car.fl.inertia.w = dv_wheel / radius
+  initial car.fr.inertia.w = dv_wheel / radius
+  initial car.rl.inertia.w = dv_wheel / radius
+  initial car.rr.inertia.w = dv_wheel / radius
+  initial car.fl.inertia.phi = 0.0
+  initial car.fr.inertia.phi = 0.0
+  initial car.rl.inertia.phi = 0.0
+  initial car.rr.inertia.phi = 0.0
+  initial car.fl.brake.tau_actual = 0.0
+  initial car.fr.brake.tau_actual = 0.0
+  initial car.rl.brake.tau_actual = 0.0
+  initial car.rr.brake.tau_actual = 0.0
+  initial drive.converter.i_out = 0.0
+  initial E_dc_in = 0.0
+  initial E_shaft_out = 0.0
+  initial E_shaft_in = 0.0
+  initial E_brake = 0.0
+metadata {
+  "_links": {
+    "wbus": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}]}},
+    "trace": {"Dyad": {"placement": {"diagram": {"x1": 20, "y1": 57, "x2": 100, "y2": 137}}}},
+    "driver": {"Dyad": {"placement": {"diagram": {"x1": 140, "y1": 70, "x2": 240, "y2": 170}}}},
+    "no_ff": {"Dyad": {"placement": {"diagram": {"x1": 100, "y1": 10, "x2": 140, "y2": 50}}}},
+    "kmh": {"Dyad": {"placement": {"diagram": {"x1": 40, "y1": 190, "x2": 110, "y2": 260}}}},
+    "drive": {"Dyad": {"placement": {"diagram": {"x1": 430, "y1": 50, "x2": 530, "y2": 150}}}},
+    "differential": {"Dyad": {"placement": {"diagram": {"x1": 560, "y1": 260, "x2": 640, "y2": 340}}}},
+    "mount": {"Dyad": {"placement": {"diagram": {"x1": 485, "y1": 190, "x2": 545, "y2": 240}}}},
+    "straight": {"Dyad": {"placement": {"diagram": {"x1": 605, "y1": 500, "x2": 655, "y2": 550, "rot": 180}}}},
+    "flat": {"Dyad": {"placement": {"diagram": {"x1": 440, "y1": 880, "x2": 480, "y2": 920}}}},
+    "car": {"Dyad": {"placement": {"diagram": {"x1": 520, "y1": 600, "x2": 740, "y2": 820}}}},
+    "motion": {"Dyad": {"placement": {"diagram": {"x1": 775, "y1": 610, "x2": 975, "y2": 810}}}},
+    "roadload": {"Dyad": {"placement": {"diagram": {"x1": 500, "y1": 865, "x2": 570, "y2": 935}}}},
+    "blend": {"Dyad": {"placement": {"diagram": {"x1": 290, "y1": 70, "x2": 390, "y2": 170}}}}
+  }
+}
+end
+
+analysis BEVRegenWLTCTransient
+  extends TransientAnalysis(
+    stop = 1800.0,
+    alg = ODEAlg.Rodas5P(),
+    dtmax = 1.0,
+    optimize = OptimizationLevel.None()
+  )
+  parameter k::Real = 50.0
+  parameter Ti::Time = 2.0
+  parameter P_charge::Power = 80.5e3
+  parameter v_fade::Real = 10.0
+  parameter P_aux::Power = 300.0
+  model = BEVRegenWLTC(
+    k = k,
+    Ti = Ti,
+    P_charge = P_charge,
+    v_fade = v_fade,
+    P_aux = P_aux
+  )
+end

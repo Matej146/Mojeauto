@@ -1,0 +1,74 @@
+component Converter
+  "Battery-side positive terminal"
+  p_in = Pin() {^p_in}
+  "Motor-side positive terminal"
+  p_out = Pin() {^p_out}
+  "Shared negative terminal"
+  n = Pin() {^n}
+  "Requested output current [A]"
+  i_ref = RealInput() {^i_ref}
+  "Field command to the motor"
+  field = RealOutput() {^field}
+
+  "Output current limit [A]"
+  parameter I_max::Current = 332.2
+  "Maximum duty ratio"
+  parameter d_max::Real = 1.0
+  "Current-loop time constant [s]"
+  parameter T_i::Time = 1.0e-3
+  "Conduction voltage drop [V]"
+  parameter V_on::Voltage = 1.2
+  "Switching frequency [Hz]"
+  parameter f_s::Frequency = 5.0e3
+  "Switching time [s]"
+  parameter t_sw::Time = 1.0e-6
+  "Smoothing for the field/duty limit"
+  parameter eps::Real = 1.0e-4
+
+  "Input voltage"
+  variable v_in::Voltage
+  "Input current"
+  variable i_in::Current
+  "Output voltage"
+  variable v_out::Voltage
+  "Output current"
+  variable i_out::Current
+  "Duty ratio"
+  variable d::Real
+  "Current command after limiting"
+  variable i_cmd::Current
+  "Input power"
+  variable P_in::Power
+  "Output power"
+  variable P_out::Power
+  "Conduction loss"
+  variable P_cond::Power
+  "Switching loss"
+  variable P_sw::Power
+  "Total converter loss"
+  variable P_loss::Power
+
+relations
+  v_in = p_in.v - n.v
+  i_in = p_in.i
+  v_out = p_out.v - n.v
+  i_out = -p_out.i
+  p_in.i + p_out.i + n.i = 0
+
+  v_out = d * v_in
+  i_in = d * i_out + P_loss / v_in
+
+  P_in = v_in * i_in
+  P_out = v_out * i_out
+  P_cond = V_on * abs(i_out)
+  P_sw = f_s * t_sw * v_in * abs(i_out)
+  P_loss = P_cond + P_sw
+
+  i_cmd = min(max(i_ref, -I_max), I_max)
+  T_i * der(i_out) = i_cmd - i_out
+
+  0.5 * (
+    (1.0 - field) + (d_max - abs(d))
+    - sqrt(((1.0 - field) - (d_max - abs(d)))^2 + eps^2)
+  ) = 0
+end

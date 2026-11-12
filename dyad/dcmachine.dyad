@@ -7,15 +7,19 @@ component DCMachine
   spline = Spline() {^spline}
   "Housing"
   support = Spline() {^support}
+  "Flux as a fraction of full flux; present only with field_weakening = true"
+  field = RealInput() if field_weakening {^field}
   resistor = ElectricalComponents.Analog.Basic.Resistor(R = R) {^resistor}
   inductor = ElectricalComponents.Analog.Basic.Inductor(L = L) {^inductor}
-  emf = ElectricalComponents.Analog.Basic.RotationalEMF(k = k) {^emf}
+  emf = FieldEMF(k = k) {^emf}
   rotor = RotationalComponents.Components.Inertia(J = J) {^rotor}
   friction = RotationalComponents.Sources.SignTorque(tau_nominal = -T_f, reg = RotationalComponents.Sources.Regularization.Linear(), w0 = w_reg) {^friction}
   iron = RotationalComponents.Sources.SignTorque(tau_nominal = -K_i, reg = RotationalComponents.Sources.Regularization.Linear(), w0 = w_reg) {^iron}
   windage = RotationalComponents.Sources.QuadraticSpeedDependentTorque(tau_nominal = -k_w * w_base ^ 2, w_nominal = w_base, TorqueDirection = false) {^windage}
   constant_loss = RotationalComponents.Sources.InverseSpeedDependentTorque(tau_nominal = -C / w_reg, w_nominal = w_reg, w0 = w_reg, TorqueDirection = false) {^constant_loss}
 
+  "Expose the field input; off runs at full flux"
+  structural parameter field_weakening::Boolean = false
   "Peak shaft torque, Leaf ZE1"
   parameter T_max::Torque = 320.0
   "Base speed, 3283 rpm"
@@ -40,7 +44,7 @@ component DCMachine
   parameter w_reg::AngularVelocity = 10.0
   "Torque the losses take at base speed"
   parameter tau_loss_base::Torque = T_f + K_i + k_w * w_base ^ 2 + C / w_base
-  "Torque and back-EMF constant KΦ, from k w_base + R (T_max + tau_loss_base) / k = V_nom"
+  "Torque and back-EMF constant KΦ"
   parameter k::ElectricalTorqueConstant = (V_nom + sqrt(V_nom ^ 2 - 4.0 * w_base * R * (T_max + tau_loss_base))) / (2.0 * w_base)
 
   "Voltage across the component (between pin p and pin n)."
@@ -81,6 +85,13 @@ relations
   connect(emf.rotor, rotor.spline_a, friction.spline, iron.spline, windage.spline, constant_loss.spline) {^id5}
   connect(rotor.spline_b, spline) {^id6}
   connect(emf.housing, friction.support, iron.support, windage.support, constant_loss.support, support) {^id7}
+
+  if field_weakening
+    connect(field, emf.field) {^id8}
+  else
+    emf.field = 1.0
+  end
+
   i = p.i
   E = emf.v
   tau_em = -emf.tau
@@ -96,11 +107,19 @@ relations
   P_loss = P_cu + P_fric + P_iron + P_wind + P_const
 
 metadata {
-  "Dyad": {"icons": {"default": "dyad://VehicleSystemsComponents/Vehicle/Electric/DCMachine.svg"}, "labels": [{"label": "$(instance)", "x": 500, "y": 1150, "rot": 0}]},
+  "Dyad": {
+    "icons": {
+      "default": "dyad://VehicleSystemsComponents/Vehicle/Electric/DCMachine.svg"
+    },
+    "labels": [
+      {"label": "$(instance)", "x": 500, "y": 1150, "rot": 0}
+    ]
+  },
   "_links": {
+    "id8": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 80, "y": 500}, {"x": 80, "y": 320}, {"x": 470, "y": 320}], "E": 2}]}},
     "id7": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 120, "y": 450}], "E": -1}, {"S": 2, "M": [], "E": -1}, {"S": -1, "M": [{"x": 120, "y": 880}], "E": -2}, {"S": 3, "M": [{"x": 360, "y": 800}], "E": -2}, {"S": -2, "M": [], "E": -3}, {"S": -3, "M": [], "E": 6}, {"S": -3, "M": [], "E": -4}, {"S": 4, "M": [{"x": 545, "y": 800}], "E": -4}, {"S": 5, "M": [{"x": 720, "y": 800}, {"x": 720, "y": 880}], "E": -4}], "junctions": [{"x": 120, "y": 800}, {"x": 360, "y": 880}, {"x": 500, "y": 880}, {"x": 545, "y": 880}]}},
     "id6": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}]}},
-    "id5": {"Dyad": {"edges": [{"S": 1, "M": [], "E": -1}, {"S": -1, "M": [], "E": 2}, {"S": -1, "M": [], "E": -2}, {"S": -2, "M": [], "E": -3}, {"S": -2, "M": [], "E": -4}, {"S": -3, "M": [{"x": 490, "y": 750}], "E": 4}, {"S": -3, "M": [{"x": 290, "y": 630}, {"x": 290, "y": 750}], "E": 3}, {"S": -4, "M": [{"x": 690, "y": 750}], "E": 5}, {"S": -4, "M": [{"x": 890, "y": 630}, {"x": 890, "y": 750}], "E": 6}], "junctions": [{"x": 620, "y": 450}, {"x": 620, "y": 630}, {"x": 490, "y": 630}, {"x": 690, "y": 630}]}},
+    "id5": {"Dyad": {"edges": [{"S": 1, "M": [], "E": -1}, {"S": -1, "M": [], "E": 2}, {"S": -1, "M": [], "E": -2}, {"S": -2, "M": [], "E": -3}, {"S": -2, "M": [], "E": -4}, {"S": -3, "M": [{"x": 490, "y": 750}], "E": 4}, {"S": -3, "M": [{"x": 290, "y": 630}, {"x": 290, "y": 750}], "E": 3}, {"S": -3, "M": [{"x": 690, "y": 750}], "E": 5}, {"S": -4, "M": [{"x": 890, "y": 630}, {"x": 890, "y": 750}], "E": 6}], "junctions": [{"x": 620, "y": 450}, {"x": 620, "y": 630}, {"x": 490, "y": 630}, {"x": 690, "y": 630}]}},
     "id4": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 470, "y": 500}, {"x": 470, "y": 560}, {"x": 60, "y": 560}, {"x": 60, "y": 800}], "E": 2}]}},
     "id3": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 500, "y": 200}], "E": 2}]}},
     "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}]}},
@@ -109,6 +128,7 @@ metadata {
     "support": {"Dyad": {"placement": {"icon": {"iconName": "support", "x1": 450, "y1": 950, "x2": 550, "y2": 1050}, "diagram": {"iconName": "support", "x1": 450, "y1": 950, "x2": 550, "y2": 1050}}}},
     "p": {"Dyad": {"placement": {"icon": {"iconName": "pos", "x1": -50, "y1": 150, "x2": 50, "y2": 250}, "diagram": {"iconName": "pos", "x1": -50, "y1": 150, "x2": 50, "y2": 250}}}},
     "n": {"Dyad": {"placement": {"icon": {"iconName": "neg", "x1": -50, "y1": 750, "x2": 50, "y2": 850}, "diagram": {"iconName": "neg", "x1": -50, "y1": 750, "x2": 50, "y2": 850}}}},
+    "field": {"Dyad": {"placement": {"icon": {"x1": -50, "y1": 450, "x2": 50, "y2": 550}, "diagram": {"x1": -50, "y1": 450, "x2": 50, "y2": 550}}}},
     "resistor": {"Dyad": {"placement": {"diagram": {"x1": 100, "y1": 150, "x2": 200, "y2": 250}}}},
     "inductor": {"Dyad": {"placement": {"diagram": {"x1": 250, "y1": 150, "x2": 350, "y2": 250}}}},
     "emf": {"Dyad": {"placement": {"diagram": {"x1": 450, "y1": 400, "x2": 550, "y2": 500}}}},

@@ -12,6 +12,8 @@ end
 include("ABSStopWheelOnly_experiment.jl")
 include("ABSStop_experiment.jl")
 include("AirPathStep_experiment.jl")
+include("BatteryDischarge_experiment.jl")
+include("Battery_experiment.jl")
 include("Body_experiment.jl")
 include("CarFullThrottle_experiment.jl")
 include("CarStepTest_experiment.jl")

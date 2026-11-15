@@ -12,6 +12,7 @@ end
 include("ABSStopWheelOnly_experiment.jl")
 include("ABSStop_experiment.jl")
 include("AirPathStep_experiment.jl")
+include("BEVEnergyBill_experiment.jl")
 include("BEVHardStop_experiment.jl")
 include("BEVRegenWLTC_experiment.jl")
 include("BEVWLTC_experiment.jl")

@@ -1,0 +1,16 @@
+component NoisyCruiseStep
+  demand = BlockComponents.Sources.Step(offset = 90, height = 20, start_time = 0)
+  noise = MeasurementNoise(amplitude = 0.2)
+ controller = CruiseController(y_max = 1e6, y_min = -1e6, wd = 0, xd0 = -90, Nd = 2)
+  plant = GradeCar(T_max = 1e6)
+  road = BlockComponents.Sources.Constant(k = 0)
+relations
+  connect(demand.y, controller.u_s)
+  connect(plant.v_kmh, noise.u)
+  connect(noise.y, controller.u_m)
+  connect(controller.y, plant.tau_cmd)
+  connect(road.y, plant.grade)
+  initial plant.body.mass.s = 0
+  initial plant.body.mass.v = 25
+  initial plant.engine.lag.x = 31.078
+end

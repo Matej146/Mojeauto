@@ -1,0 +1,56 @@
+component MapEngine
+  "Pedal, from 0 (released) to 1 (fully pressed)"
+  pedal = RealInput()
+
+  "Hose connection to the brake booster"
+  vacuum = VehicleSystemsComponents.Vehicle.GasPort()
+
+  "Engine output shaft"
+  spline = Spline()
+
+  "Engine mounts"
+  support = Spline()
+
+  "Manifold absolute pressure [Pa]"
+  p_m = RealOutput()
+
+  "Fuel mass flow [kg/s]"
+  mdot_fuel = RealOutput()
+
+  "CO2 mass flow [kg/s]"
+  mdot_co2 = RealOutput()
+
+  air = VehicleSystemsComponents.Vehicle.Engine.AirPath()
+  speed = RotationalComponents.Sensors.VelocitySensor()
+  torque_map = VehicleSystemsComponents.Vehicle.Engine.CutTorqueMap()
+  fuel_map = VehicleSystemsComponents.Vehicle.Engine.CutFuelMap()
+  cut_logic = VehicleSystemsComponents.Vehicle.Engine.FuelCutLogic()
+  co2 = BlockComponents.Math.Gain(k = 3.09)
+  torque = RotationalComponents.Sources.TorqueSource()
+
+relations
+  connect(pedal, air.u_thr)
+  connect(vacuum, air.vacuum)
+
+  connect(speed.w, air.omega)
+  connect(speed.w, torque_map.omega)
+  connect(speed.w, fuel_map.omega)
+  connect(speed.w, cut_logic.omega)
+
+  connect(air.p_m, torque_map.p_m)
+  connect(air.p_m, fuel_map.p_m)
+  connect(air.p_m, p_m)
+
+  connect(pedal, cut_logic.pedal)
+  connect(cut_logic.cut, fuel_map.cut)
+  connect(cut_logic.cut, torque_map.cut)
+
+  connect(torque_map.y, torque.tau)
+  connect(fuel_map.y, co2.u)
+  connect(fuel_map.y, mdot_fuel)
+  connect(co2.y, mdot_co2)
+
+  connect(torque.spline, spline)
+  connect(speed.spline, spline)
+  connect(torque.support, support)
+end

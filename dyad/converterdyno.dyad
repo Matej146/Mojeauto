@@ -1,0 +1,42 @@
+component ConverterDyno
+  "Battery voltage"
+  parameter V::Voltage = 350.0
+  "Requested motor current"
+  parameter I_ref::Current = 500.0
+  "Dyno speed before the ramp [rpm]"
+  parameter rpm_start::Real = 0.0
+  "Dyno speed after the ramp [rpm]"
+  parameter rpm_end::Real = 10000.0
+
+  voltage = BlockComponents.Sources.Constant(k = V)
+  supply = ElectricalComponents.Analog.Sources.VoltageSource()
+  current = BlockComponents.Sources.Constant(k = I_ref)
+  converter = Converter()
+  machine = DCMachine(field_weakening = true)
+  ground = ElectricalComponents.Analog.Basic.Ground()
+  speed = BlockComponents.Sources.Ramp(
+    height = (rpm_end - rpm_start) * pi / 30.0,
+    offset = rpm_start * pi / 30.0,
+    start_time = 1.0,
+    duration = 100.0
+  )
+  dyno = RotationalComponents.Sources.VelocitySource()
+  mounts = RotationalComponents.Components.Fixed()
+
+relations
+  initial dyno.phi = 0
+  initial converter.i_out = 0
+
+  connect(voltage.y, supply.V)
+  connect(supply.p, converter.p_in)
+  connect(converter.p_out, machine.p)
+  connect(machine.n, converter.n)
+  connect(supply.n, converter.n)
+  connect(converter.n, ground.g)
+  connect(current.y, converter.i_ref)
+  connect(converter.field, machine.field)
+  connect(speed.y, dyno.w_ref)
+  connect(machine.spline, dyno.spline)
+  connect(machine.support, mounts.spline)
+  connect(dyno.support, mounts.spline)
+end

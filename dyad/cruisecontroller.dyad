@@ -1,0 +1,55 @@
+component CruiseController
+  u_s = Dyad.RealInput()
+  u_m = Dyad.RealInput()
+  y = Dyad.RealOutput()
+
+  error = BlockComponents.Math.Add(k1 = 1, k2 = -1)
+  add_d = BlockComponents.Math.Add(k1 = wd, k2 = -1)
+  derivative = BlockComponents.Continuous.Derivative(k = Td, T = Td / Nd, x0 = xd0)
+  integrator = BlockComponents.Continuous.Integrator(k = 1 / Ti, x0 = xi0)
+  add_pid = BlockComponents.Math.Add3(k1 = 1, k2 = 1, k3 = 1)
+  gain = BlockComponents.Math.Gain(k = k)
+  limiter = BlockComponents.Nonlinear.Limiter(y_max = y_max, y_min = y_min)
+
+  excess = BlockComponents.Math.Add(k1 = 1, k2 = -1)
+  push = BlockComponents.Math.Product()
+  winding = BlockComponents.Logical.GreaterThreshold(threshold = 0)
+  zero = BlockComponents.Sources.Constant(k = 0.0)
+  gate = BlockComponents.Logical.Switch()
+
+  parameter k::Real = 56
+  parameter Ti::Time = 10
+  parameter xi0::Real = 0
+  parameter Td::Time = 0.5
+  parameter Nd::Real = 10
+  parameter wd::Real = 0
+  parameter xd0::Real = -90
+  parameter y_max::Real = 1e300
+  parameter y_min::Real = -y_max
+
+relations
+  connect(u_s, error.u1)
+  connect(u_m, error.u2)
+
+  connect(error.y, add_pid.u1)
+  connect(error.y, gate.u3)
+  connect(gate.y, integrator.u)
+  connect(integrator.y, add_pid.u3)
+
+  connect(u_s, add_d.u1)
+  connect(u_m, add_d.u2)
+  connect(add_d.y, derivative.u)
+  connect(derivative.y, add_pid.u2)
+
+  connect(add_pid.y, gain.u)
+  connect(gain.y, limiter.u)
+  connect(limiter.y, y)
+
+  connect(gain.y, excess.u1)
+  connect(limiter.y, excess.u2)
+  connect(excess.y, push.u1)
+  connect(error.y, push.u2)
+  connect(push.y, winding.u)
+  connect(zero.y, gate.u1)
+  connect(winding.y, gate.u2)
+end

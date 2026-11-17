@@ -1,0 +1,15 @@
+component AirPathStep
+  throttle_cmd = BlockComponents.Sources.Step(offset = 0, height = 1, start_time = 1)
+  "800 rpm"
+  speed = BlockComponents.Sources.Constant(k = 314.159)
+  throttle = VehicleSystemsComponents.Vehicle.Engine.Throttle()
+  cylinders = VehicleSystemsComponents.Vehicle.Engine.CylinderAirflow()
+  manifold = Manifold()
+relations
+  connect(throttle_cmd.y, throttle.u_thr)
+  connect(speed.y, cylinders.omega)
+  connect(throttle.mdot_thr, manifold.mdot_thr)
+  connect(cylinders.mdot_cyl, manifold.mdot_cyl)
+  connect(manifold.p_m, throttle.p_m, cylinders.p_m)
+  initial manifold.p = 101325
+end

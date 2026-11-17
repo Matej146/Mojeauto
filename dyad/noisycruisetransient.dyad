@@ -1,0 +1,4 @@
+analysis NoisyCruiseTransient
+  extends Dyad.TransientAnalysis(stop = 40)
+  model = Mojeauto.NoisyCruiseStep()
+end

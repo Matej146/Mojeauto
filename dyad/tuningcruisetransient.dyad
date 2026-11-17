@@ -1,0 +1,4 @@
+analysis TuningCruiseTransient
+  extends Dyad.TransientAnalysis(stop = 60)
+  model = Mojeauto.TuningCruiseStep()
+end

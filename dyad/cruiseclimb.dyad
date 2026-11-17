@@ -1,0 +1,20 @@
+component CruiseClimb
+  demand = BlockComponents.Sources.Constant(k = 130)
+  road = BlockComponents.Sources.Pulse(
+    amplitude = 0.10,
+    offset = 0,
+    start_time = 30,
+    duty_cycle = 1.0,
+    period = 120
+  )
+  controller = CruiseController(xd0 = -130, y_max = 150, y_min = 0)
+  plant = GradeCar()
+relations
+  connect(demand.y, controller.u_s)
+  connect(plant.v_kmh, controller.u_m)
+  connect(controller.y, plant.tau_cmd)
+  connect(road.y, plant.grade)
+  initial plant.body.mass.s = 0
+  initial plant.body.mass.v = 36.111111111111114
+  initial plant.engine.lag.x = 50.9693
+end

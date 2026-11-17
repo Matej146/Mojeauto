@@ -1,0 +1,136 @@
+component BEVHardStop
+  parameter m::Mass = 1500.0
+  parameter radius::Length = 0.31
+  parameter v0::Velocity = 22.22222222222222
+  parameter T_cmd::Torque = 2500.0
+  parameter brake_time::Time = 0.5
+  parameter t_apply::Time = 0.1
+  parameter tau_max::Torque = 320.0
+  parameter P_charge::Power = 80.5e3
+  parameter v_fade::Real = 10.0
+  parameter P_aux::Power = 300.0
+  parameter ratio::Real = 8.193
+  parameter withdraw::Real = 1.0
+  parameter road_mu::Real = 1.0
+
+  pedal = BlockComponents.Sources.Ramp(
+    offset = 0.0,
+    height = -4.0 * T_cmd / ratio,
+    duration = t_apply,
+    start_time = brake_time
+  ) {^pedal}
+
+  kmh = VehicleSystemsComponents.Vehicle.ToKmPerHour() {^kmh}
+  blend = RegenBlend(
+    ratio = ratio,
+    radius = radius,
+    tau_max = tau_max,
+    P_charge = P_charge,
+    v_fade = v_fade,
+    abs_rule = true,
+    withdraw = withdraw
+  ) {^blend}
+  drive = ElectricDrive(ratio = ratio, P_aux = P_aux) {^drive}
+  differential = MultibodyComponents.PlanarMechanics.DifferentialGear() {^differential}
+  mount = RotationalComponents.Components.Fixed() {^mount}
+  straight = RotationalComponents.Components.Fixed() {^straight}
+  zero = BlockComponents.Sources.Constant(k = 0.0) {^zero}
+  abs = VehicleSystemsComponents.Vehicle.Planar.ABSUnit(
+    select_low = 0.0,
+    report_front = true
+  ) {^abs}
+  car = VehicleSystemsComponents.Vehicle.Planar.PlanarCar(
+    m = m,
+    radius = radius,
+    mu_scale_fl = road_mu,
+    mu_scale_fr = road_mu,
+    mu_scale_rl = road_mu,
+    mu_scale_rr = road_mu
+  ) {^car}
+  motion = VehicleSystemsComponents.Vehicle.Planar.BusMotion() {^motion}
+  slips = VehicleSystemsComponents.Vehicle.Planar.BusSlip() {^slips}
+
+  variable P_dc::Power
+  variable P_shaft::Power
+  variable E_dc_in::Energy
+  variable E_shaft_in::Energy
+  variable E_brake::Energy
+
+relations
+  connect(car.bus, motion.bus, slips.bus)
+  connect(pedal.y, blend.tau_ref)
+  connect(motion.vx, kmh.u, abs.vx)
+  connect(kmh.y, blend.v)
+  connect(blend.tau_motor, drive.tau_ref)
+  connect(blend.tau_brake, abs.demand)
+  connect(drive.spline, differential.flange_b)
+  connect(differential.flange_left, car.spin_fl)
+  connect(differential.flange_right, car.spin_fr)
+  connect(drive.support, mount.spline)
+  connect(car.steering, straight.spline)
+  connect(zero.y, abs.dT_fl, abs.dT_fr, abs.dT_rl, abs.dT_rr)
+  connect(slips.kappa_fl, abs.kappa_fl)
+  connect(slips.kappa_fr, abs.kappa_fr)
+  connect(slips.kappa_rl, abs.kappa_rl)
+  connect(slips.kappa_rr, abs.kappa_rr)
+  connect(abs.tau_fl, car.tau_fl)
+  connect(abs.tau_fr, car.tau_fr)
+  connect(abs.tau_rl, car.tau_rl)
+  connect(abs.tau_rr, car.tau_rr)
+  connect(abs.front_active, blend.abs_active)
+
+  P_dc = drive.battery.v * drive.battery.i
+  P_shaft = drive.machine.P_mech
+  der(E_dc_in) = max(-P_dc, 0.0)
+  der(E_shaft_in) = max(-P_shaft, 0.0)
+  der(E_brake) =
+    car.fl.brake.tau_friction * car.fl.brake.w +
+    car.fr.brake.tau_friction * car.fr.brake.w +
+    car.rl.brake.tau_friction * car.rl.brake.w +
+    car.rr.brake.tau_friction * car.rr.brake.w
+
+  initial car.body.r = [0, 0]
+  initial car.body.v = [v0, 0]
+  initial car.body.phi = 0.0
+  initial car.body.w = 0.0
+  initial car.fl.inertia.w = (v0 + 0.01) / radius
+  initial car.fr.inertia.w = (v0 + 0.01) / radius
+  initial car.rl.inertia.w = (v0 + 0.01) / radius
+  initial car.rr.inertia.w = (v0 + 0.01) / radius
+  initial car.fl.inertia.phi = 0.0
+  initial car.fr.inertia.phi = 0.0
+  initial car.rl.inertia.phi = 0.0
+  initial car.rr.inertia.phi = 0.0
+  initial car.fl.brake.tau_actual = 0.0
+  initial car.fr.brake.tau_actual = 0.0
+  initial car.rl.brake.tau_actual = 0.0
+  initial car.rr.brake.tau_actual = 0.0
+  initial drive.converter.i_out = 0.0
+  initial E_dc_in = 0.0
+  initial E_shaft_in = 0.0
+  initial E_brake = 0.0
+end
+
+analysis BEVHardStopTransient
+  extends TransientAnalysis(
+    stop = 6.0,
+    alg = ODEAlg.Rodas5P(),
+    dtmax = 0.005,
+    tstops = [0.5, 0.6],
+    optimize = OptimizationLevel.None()
+  )
+  parameter T_cmd::Torque = 2500.0
+  parameter tau_max::Torque = 320.0
+  parameter P_charge::Power = 80.5e3
+  parameter v_fade::Real = 10.0
+  parameter withdraw::Real = 1.0
+  parameter road_mu::Real = 1.0
+  model = BEVHardStop(
+    T_cmd = T_cmd,
+    tau_max = tau_max,
+    P_charge = P_charge,
+    v_fade = v_fade,
+    withdraw = withdraw,
+    road_mu = road_mu
+  )
+end

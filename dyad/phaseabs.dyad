@@ -1,0 +1,47 @@
+component PhaseABS
+  "Wheel-speed-based ABS controller"
+  kappa = RealInput() {^kappa}
+  a_w = RealInput() {^a_w}
+  v = RealInput() {^v}
+  demand = RealInput() {^demand}
+  p_cmd = RealOutput() {^p_cmd}
+
+  pressure = VehicleSystemsComponents.Vehicle.ABSPressureIntegrator(T_track = 0.01)
+
+  "Wheel deceleration that starts a pressure dump [m/s^2]"
+  parameter a_minus::Acceleration = 12
+  "Wheel acceleration that holds pressure [m/s^2]"
+  parameter a_plus::Acceleration = 3
+  "Estimated slip that starts a pressure dump"
+  parameter lambda_1::Real = 0.2
+  "Pressure dump rate [Pa/s]"
+  parameter k_dec::Real = 5.8e7
+  "Slow pressure rebuild rate [Pa/s]"
+  parameter k_inc::Real = 1.16e7
+  "ABS off below this speed"
+  parameter v_min::Velocity = 1.5
+  "Latch time [s]"
+  parameter T_latch::Time = 0.001
+
+  variable phase::Real
+  variable cycled::Real
+
+relations
+  phase = ifelse(
+    a_w > a_plus,
+    0,
+    ifelse(a_w < -a_minus or kappa < -lambda_1, -1, 1)
+  )
+
+  initial cycled = 0
+  der(cycled) = ifelse(phase < -0.5, (1 - cycled) / T_latch, 0)
+
+  connect(demand, pressure.demand)
+  pressure.requested_rate = ifelse(
+    phase < -0.5,
+    -k_dec,
+    ifelse(phase < 0.5, 0, k_inc)
+  )
+  pressure.active = ifelse(v > v_min and cycled > 0.5, 1.0, 0.0)
+  p_cmd = ifelse(cycled > 0.5, pressure.cmd, demand)
+end

@@ -1,0 +1,4 @@
+analysis CruiseControlTestTransient
+  extends Dyad.TransientAnalysis(stop = 100)
+  model = Mojeauto.CruiseControlTest()
+end

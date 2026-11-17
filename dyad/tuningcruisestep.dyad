@@ -1,0 +1,23 @@
+component TuningCruiseStep
+  demand = BlockComponents.Sources.Step(offset = 90, height = 20, start_time = 0)
+  controller = CruiseController(
+    k = 67.41,
+    Ti = 1.092,
+    Td = 0.273,
+    Nd = 10,
+    wd = 0,
+    xd0 = -90,
+    y_max = 1e6,
+    y_min = -1e6
+  )
+  plant = GradeCar(T_max = 1e6, m = 1400, theta_e = 0.3)
+  road = BlockComponents.Sources.Constant(k = 0)
+relations
+  connect(demand.y, controller.u_s)
+  connect(plant.v_kmh, controller.u_m)
+  connect(controller.y, plant.tau_cmd)
+  connect(road.y, plant.grade)
+  initial plant.body.mass.s = 0
+  initial plant.body.mass.v = 25
+  initial plant.engine.lag.x = 31.078
+end

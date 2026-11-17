@@ -1,0 +1,24 @@
+component SlipCruiseIcePatch
+  demand = BlockComponents.Sources.Constant(k = 90)
+  controller = CruiseController(xi0 = 31.078 / 56)
+  plant = SlipCar()
+  road = BlockComponents.Sources.Constant(k = 0)
+  friction = BlockComponents.Sources.Pulse(
+    amplitude = 0.05,
+    offset = 1.0,
+    start_time = 4,
+    duty_cycle = 1.0,
+    period = 8
+  )
+relations
+  connect(demand.y, controller.u_s)
+  connect(plant.v_kmh, controller.u_m)
+  connect(controller.y, plant.tau_cmd)
+  connect(road.y, plant.grade)
+  connect(friction.y, plant.mu_scale)
+  initial plant.body.mass.s = 0
+  initial plant.body.mass.v = 25
+  initial plant.engine.lag.x = 31.078
+  initial plant.wheel_inertia.phi = 0
+  initial plant.wheel_inertia.w = 25 / plant.r
+end

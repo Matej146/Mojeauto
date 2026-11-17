@@ -1,0 +1,4 @@
+analysis CarStepTestTransient
+  extends Dyad.TransientAnalysis(stop = 500)
+  model = Mojeauto.CarStepTest()
+end

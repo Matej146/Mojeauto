@@ -1,0 +1,72 @@
+test component SeriesWLTC
+  extends VehicleSystemsComponents.Lecture5.SeriesWLTCGround
+
+  parameter P_on::Power = 30000.0
+  parameter soc_on::Real = 0.43
+  parameter soc_off::Real = 0.49
+  parameter soc_width::Real = 0.005
+
+  battery = VehicleSystemsComponents.Vehicle.Electric.Battery(
+    E = 270.0,
+    Q_nom = 1.4e3 * 3600 / 270,
+    R0 = 0.33,
+    SoC0 = 0.6
+  )
+
+  aux = VehicleSystemsComponents.Vehicle.Electric.AuxLoad(
+    P_aux = 300.0
+  )
+
+  drive = VehicleSystemsComponents.Vehicle.Electric.TractionDrive(
+    T_max = tau_max,
+    ratio = ratio
+  )
+
+  engine_generator = VehicleSystemsComponents.Vehicle.EngineGenerator()
+  operating_line = VehicleSystemsComponents.Vehicle.OperatingLine()
+  ground = ElectricalComponents.Analog.Basic.Ground()
+  stored_power = BlockComponents.Math.Product()
+
+  engine_latch = VehicleSystemsComponents.Vehicle.Engine.HysteresisLatch(
+    latch_time = 10.0
+  )
+
+  power_command = BlockComponents.Math.Gain(k = P_on)
+
+relations
+  connect(battery.p, aux.p, drive.p, engine_generator.p)
+  connect(battery.n, aux.n, drive.n, engine_generator.n, ground.g)
+
+  stored_power.u1 = battery.v
+  stored_power.u2 = battery.i
+  connect(stored_power.y, meter.P_stored)
+
+  connect(drive.tau_ref, split.tau_motor)
+  connect(drive.spline, differential.flange_b)
+  connect(drive.support, mount.spline)
+
+  connect(engine_generator.support, mount.spline)
+  connect(engine_generator.mdot_fuel, meter.mdot_fuel)
+  connect(engine_generator.P_shaft, operating_line.P)
+  connect(operating_line.N, engine_generator.N_ref)
+
+  engine_latch.set =
+    0.5 * (1 - tanh((battery.SoC - soc_on) / soc_width))
+  engine_latch.reset =
+    0.5 * (1 + tanh((battery.SoC - soc_off) / soc_width))
+
+  connect(engine_latch.y, power_command.u)
+  connect(power_command.y, engine_generator.P_ref)
+
+  initial drive.converter.i_out = 0.0
+end
+
+analysis SeriesWLTCTransient
+  extends TransientAnalysis(
+    stop = 1800.0,
+    alg = ODEAlg.Rodas5P(),
+    dtmax = 1.0,
+    optimize = OptimizationLevel.None()
+  )
+  model = SeriesWLTC()
+end
